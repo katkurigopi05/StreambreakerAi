@@ -167,23 +167,15 @@ selected_backend = backend_map[llm_backend]
 
 api_key_input = ""
 if selected_backend != "ollama":
-    default_key = ""
-    # Try fetching the secure key from Streamlit secrets or OS env vars first
-    secret_key = ""
-    if selected_backend == "openai":
-        secret_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", ""))
+    try:
+        api_key_input = st.secrets["OPENAI_API_KEY"]
+    except Exception:
+        api_key_input = os.getenv("OPENAI_API_KEY", "")
     
-    if secret_key:
-        api_key_input = secret_key
-        st.sidebar.success("✅ Secure API Key authenticated automatically")
+    if api_key_input:
+        st.sidebar.caption("✅ Processing via Secure Cloud Backend")
     else:
-        api_key_input = st.sidebar.text_input(
-            "API Key", type="password",
-            value=default_key,
-            help="Enter your Groq or OpenAI API key"
-        )
-        if not api_key_input:
-            st.sidebar.warning("⚠️ Enter an API key to generate strategies")
+        st.sidebar.error("⚠️ API Key not configured in backend secrets. App will not function properly.")
 else:
     st.sidebar.caption("Using local Ollama — no API key needed")
     st.sidebar.caption("⏱️ First run may take 2-3 min (model loads into memory)")
