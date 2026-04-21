@@ -1,0 +1,8 @@
+xgboost>=2.0
+scikit-learn>=1.5
+pandas>=2.0
+numpy>=1.24
+textblob>=0.18
+streamlit>=1.30
+requests>=2.31
+joblib>=1.3

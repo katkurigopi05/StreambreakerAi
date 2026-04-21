@@ -1,18 +1,14 @@
-notepad .gitignore
-```
-
-When Notepad opens, click "Yes" to create new file, then paste:
-```
 # Virtual environment
 venv/
 *.pyc
 __pycache__/
 
-# Environment variables (KEEPS YOUR API KEY SECRET!)
+# Environment variables
 .env
 
-# Streamlit cache
+# Streamlit secrets (KEEPS YOUR API KEY SECRET!)
 .streamlit/
+secrets.toml
 
 # OS files
 .DS_Store

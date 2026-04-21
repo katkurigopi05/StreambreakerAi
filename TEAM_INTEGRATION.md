@@ -49,7 +49,7 @@ Model 3 generates marketing strategies based on prediction probability (Model 1)
 
 ---
 
-### From User Input (via Reddy - Model 4)
+### From User Input (via Gopi Krishna - Model 4)
 **Need to know:**
 - [ ] How will user data be passed to me?
 - [ ] What format? (REST API call? Python function?)
@@ -119,7 +119,7 @@ from miguel_model import MarketingStrategyGenerator
 
 generator = MarketingStrategyGenerator()
 
-# Reddy calls this with data from Models 1 & 2
+# Gopi Krishna calls this with data from Models 1 & 2
 result = generator.generate_strategy_json(
     prediction_probability=harsh_prediction,
     budget=user_budget,
@@ -161,7 +161,7 @@ result = generator.generate_strategy_json(
 3. Can you share example NLP outputs?
 4. What happens if lyrics aren't available?
 
-### For Reddy (Model 4):
+### For Gopi Krishna (Model 4):
 1. How should data flow? (Function calls? API?)
 2. Where in the UI will my strategy appear?
 3. How should errors be handled?
@@ -184,7 +184,7 @@ result = generator.generate_strategy_json(
 - [ ] Test with real predictions and lyrics
 
 ### Week 5:
-- [ ] Full system integration with Reddy
+- [ ] Full system integration with Gopi Krishna
 - [ ] End-to-end testing
 - [ ] Performance optimization
 

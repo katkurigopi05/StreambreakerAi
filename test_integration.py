@@ -24,7 +24,7 @@ def test_scenario_1_high_confidence():
         "profanity_detected": False
     }
     
-    # Mock User Input (via Reddy's web app)
+    # Mock User Input (via Gopi Krishna's web app)
     user_input = {
         "budget": 1500,
         "genre": "Indie Pop",
@@ -117,7 +117,7 @@ def test_scenario_2_low_confidence():
 
 
 def test_json_output():
-    """Test: JSON output for Reddy's web app integration"""
+    """Test: JSON output for Gopi Krishna's web app integration"""
     print("="*60)
     print("TEST SCENARIO 3: JSON Output for Web App")
     print("="*60)
