@@ -159,7 +159,7 @@ st.sidebar.markdown("### 🤖 LLM Backend")
 llm_backend = st.sidebar.selectbox(
     "Backend",
     ["Ollama (Local)", "Groq (Fast & Free)", "OpenAI"],
-    index=0,  # Set Ollama back to default
+    index=2,  # Set OpenAI as default for public cloud deployment
 )
 
 backend_map = {"Ollama (Local)": "ollama", "Groq (Fast & Free)": "groq", "OpenAI": "openai"}
