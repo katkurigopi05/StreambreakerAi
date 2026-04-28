@@ -136,14 +136,16 @@ st.markdown('<p class="subtitle">AI-Powered Music Marketing Strategy Platform �
 
 # Team credits
 with st.expander("👥 Team Members", expanded=False):
-    cols = st.columns(4)
+    cols = st.columns(5)
     with cols[0]:
-        st.markdown("**Model 1** — Harsh  \n*XGBoost Prediction*")
+        st.markdown("**Model 0** — Team  \n*Audio Feature Extractor*")
     with cols[1]:
-        st.markdown("**Model 2** — Stephanie  \n*NLP Lyric Analysis*")
+        st.markdown("**Model 1** — Harsh  \n*XGBoost Prediction*")
     with cols[2]:
-        st.markdown("**Model 3** — Miguel  \n*LLM Marketing Strategy*")
+        st.markdown("**Model 2** — Stephanie  \n*NLP Lyric Analysis*")
     with cols[3]:
+        st.markdown("**Model 3** — Miguel  \n*LLM Marketing Strategy*")
+    with cols[4]:
         st.markdown("**Model 4** — Gopi Krishna  \n*Orchestration & Web App*")
 
 st.divider()
@@ -436,8 +438,16 @@ else:
     st.info("👈 Configure track parameters in the sidebar and click **Run StreamBreaker AI**")
 
     st.markdown("### 🔄 How It Works")
-    flow_cols = st.columns(4)
+    flow_cols = st.columns(5)
     with flow_cols[0]:
+        st.markdown("""
+        #### 🎵 Model 0
+        **Audio Feature Extractor**
+        - Extracts Spotify-style features
+        - Analyzes raw audio files
+        - Powered by librosa
+        """)
+    with flow_cols[1]:
         st.markdown("""
         #### 📊 Model 1
         **XGBoost Prediction**
@@ -445,7 +455,7 @@ else:
         - Predicts streaming success
         - Returns probability %
         """)
-    with flow_cols[1]:
+    with flow_cols[2]:
         st.markdown("""
         #### 🎤 Model 2
         **NLP Lyric Analysis**
@@ -453,7 +463,7 @@ else:
         - Hook/catchiness score
         - Vocabulary richness
         """)
-    with flow_cols[2]:
+    with flow_cols[3]:
         st.markdown("""
         #### 🚀 Model 3
         **LLM Strategy Generator**
@@ -461,7 +471,7 @@ else:
         - Cites industry benchmarks
         - Actionable marketing plan
         """)
-    with flow_cols[3]:
+    with flow_cols[4]:
         st.markdown("""
         #### 🎯 Model 4
         **Orchestrator (This App)**
