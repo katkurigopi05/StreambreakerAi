@@ -182,9 +182,9 @@ else:
     st.sidebar.caption("Using local Ollama — no API key needed")
     st.sidebar.caption("⏱️ First run may take 2-3 min (model loads into memory)")
 
-# ── Model 0: Audio Upload ─────────────────────────────────
-st.sidebar.markdown("### 🎵 Model 0: Audio Upload")
-st.sidebar.caption("Upload a track to auto-fill all audio features below")
+# ── Audio Upload ──────────────────────────────────────────
+st.sidebar.markdown("### 🎵 Upload Audio")
+st.sidebar.caption("Upload a track to auto-fill all audio features")
 
 uploaded_audio = st.sidebar.file_uploader(
     "Upload", type=["mp3", "wav", "m4a", "ogg", "flac"],
