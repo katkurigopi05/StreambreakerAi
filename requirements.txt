@@ -6,3 +6,6 @@ textblob>=0.18
 streamlit>=1.30
 requests>=2.31
 joblib>=1.3
+librosa>=0.10
+soundfile>=0.12
+mutagen>=1.47

@@ -182,31 +182,69 @@ else:
     st.sidebar.caption("Using local Ollama — no API key needed")
     st.sidebar.caption("⏱️ First run may take 2-3 min (model loads into memory)")
 
+# ── Model 0: Audio Upload ─────────────────────────────────
+st.sidebar.markdown("### 🎵 Model 0: Audio Upload")
+st.sidebar.caption("Upload a track to auto-fill all audio features below")
+
+uploaded_audio = st.sidebar.file_uploader(
+    "Upload", type=["mp3", "wav", "m4a", "ogg", "flac"],
+    help="200MB per file • MP3, WAV, M4A, OGG, FLAC"
+)
+
+# Default feature values
+defaults = {
+    "danceability": 0.65, "energy": 0.75, "valence": 0.55,
+    "acousticness": 0.15, "speechiness": 0.05, "instrumentalness": 0.0,
+    "liveness": 0.12, "loudness": -6.0, "tempo": 125, "duration_ms": 210000,
+    "key": 5, "mode": 1, "time_signature": 4,
+}
+audio_metadata = None
+
+if uploaded_audio is not None:
+    try:
+        from model0_audio import extract_features, get_file_metadata
+        with st.sidebar.status("🔄 Analyzing audio with Model 0...", expanded=True) as status:
+            st.write("Extracting audio features via librosa...")
+            feats, err = extract_features(uploaded_audio, filename=uploaded_audio.name)
+            if err:
+                st.sidebar.error(f"Audio analysis failed: {err}")
+            elif feats:
+                defaults.update(feats)
+                st.sidebar.success(f"✅ Auto-filled from: **{uploaded_audio.name}**")
+                # Get metadata (title, artist, embedded lyrics)
+                uploaded_audio.seek(0)
+                audio_metadata = get_file_metadata(uploaded_audio, filename=uploaded_audio.name)
+            status.update(label="✅ Audio analyzed!", state="complete")
+    except ImportError:
+        st.sidebar.warning("⚠️ librosa not installed. Using manual sliders.")
+    except Exception as e:
+        st.sidebar.error(f"Error: {e}")
+
 # Audio Features
 st.sidebar.markdown("### 🎧 Audio Features")
-st.sidebar.caption("Spotify audio feature values (0.0 to 1.0)")
+st.sidebar.caption("Auto-filled from upload · or set manually")
 
 col_a, col_b = st.sidebar.columns(2)
 with col_a:
-    danceability = st.slider("Danceability", 0.0, 1.0, 0.65, 0.05)
-    energy = st.slider("Energy", 0.0, 1.0, 0.75, 0.05)
-    valence = st.slider("Valence", 0.0, 1.0, 0.55, 0.05)
-    acousticness = st.slider("Acousticness", 0.0, 1.0, 0.15, 0.05)
+    danceability = st.slider("Danceability", 0.0, 1.0, float(defaults["danceability"]), 0.05)
+    energy = st.slider("Energy", 0.0, 1.0, float(defaults["energy"]), 0.05)
+    valence = st.slider("Valence", 0.0, 1.0, float(defaults["valence"]), 0.05)
+    acousticness = st.slider("Acousticness", 0.0, 1.0, float(defaults["acousticness"]), 0.05)
 
 with col_b:
-    speechiness = st.slider("Speechiness", 0.0, 1.0, 0.05, 0.01)
-    instrumentalness = st.slider("Instrumentalness", 0.0, 1.0, 0.0, 0.01)
-    liveness = st.slider("Liveness", 0.0, 1.0, 0.12, 0.01)
-    loudness = st.slider("Loudness (dB)", -60.0, 0.0, -6.0, 0.5)
+    speechiness = st.slider("Speechiness", 0.0, 1.0, float(defaults["speechiness"]), 0.01)
+    instrumentalness = st.slider("Instrumentalness", 0.0, 1.0, float(defaults["instrumentalness"]), 0.01)
+    liveness = st.slider("Liveness", 0.0, 1.0, float(defaults["liveness"]), 0.01)
+    loudness = st.slider("Loudness (dB)", -60.0, 0.0, float(defaults["loudness"]), 0.5)
 
-tempo = st.sidebar.slider("Tempo (BPM)", 60, 220, 125, 5)
-duration_sec = st.sidebar.slider("Duration (seconds)", 60, 600, 210, 10)
-key = st.sidebar.selectbox("Key", list(range(12)), index=5,
+tempo = st.sidebar.slider("Tempo (BPM)", 60, 220, int(defaults["tempo"]), 5)
+duration_sec = st.sidebar.slider("Duration (sec)", 60, 600, int(defaults["duration_ms"] / 1000), 10)
+key = st.sidebar.selectbox("Key", list(range(12)), index=int(defaults["key"]),
                             format_func=lambda x: ["C", "C#", "D", "D#", "E", "F",
                                                      "F#", "G", "G#", "A", "A#", "B"][x])
-mode = st.sidebar.selectbox("Mode", [0, 1], index=1,
+mode = st.sidebar.selectbox("Mode", [0, 1], index=int(defaults["mode"]),
                              format_func=lambda x: "Major" if x == 1 else "Minor")
-time_signature = st.sidebar.selectbox("Time Signature", [3, 4, 5], index=1)
+time_signature = st.sidebar.selectbox("Time Signature", [3, 4, 5], index=[3,4,5].index(int(defaults["time_signature"])))
 explicit = st.sidebar.checkbox("Explicit Content", value=False)
 
 genre = st.sidebar.selectbox(
