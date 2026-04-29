@@ -474,121 +474,170 @@ if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_
             for err in result["errors"]:
                 st.warning(err)
 
-    # ── 3D VISUALIZATIONS ────────────────────────────────────
+    # ── 3D VISUALIZATIONS (Show/Hide) ───────────────────────
     st.markdown("---")
-    st.markdown('<div class="section-header">📊 3D Audio Analysis</div>', unsafe_allow_html=True)
+    with st.expander("📊 View Interactive Analytics & 3D Charts", expanded=False):
 
-    viz_col1, viz_col2 = st.columns([1, 1])
+        st.markdown("""
+        <div style='background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+                    border-radius: 16px; padding: 20px 24px; margin-bottom: 20px;'>
+            <h3 style='color: white; margin: 0; font-size: 1.2rem; font-weight: 700;
+                       letter-spacing: 0.05em;'>
+                🎛️ Audio Intelligence Dashboard
+            </h3>
+            <p style='color: rgba(255,255,255,0.6); margin: 4px 0 0 0; font-size: 0.85rem;'>
+                Interactive charts — drag, zoom, and hover to explore your track's data
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-    with viz_col1:
-        # 3D Radar chart of all audio features
-        feat_labels = ["Danceability", "Energy", "Valence", "Acousticness",
-                       "Speechiness", "Instrumentalness", "Liveness"]
-        feat_values = [danceability, energy, valence, acousticness,
-                       speechiness, instrumentalness, liveness]
-        feat_values_closed = feat_values + [feat_values[0]]
-        feat_labels_closed = feat_labels + [feat_labels[0]]
+        viz_col1, viz_col2 = st.columns([1, 1])
 
-        radar_fig = go.Figure()
-        radar_fig.add_trace(go.Scatterpolar(
-            r=feat_values_closed,
-            theta=feat_labels_closed,
-            fill='toself',
-            fillcolor='rgba(102, 126, 234, 0.3)',
-            line=dict(color='#667eea', width=2),
-            name='Your Track'
-        ))
-        radar_fig.add_trace(go.Scatterpolar(
-            r=[0.65, 0.7, 0.6, 0.3, 0.08, 0.1, 0.15, 0.65],
-            theta=feat_labels_closed,
-            fill='toself',
-            fillcolor='rgba(16, 185, 129, 0.15)',
-            line=dict(color='#10b981', width=1.5, dash='dot'),
-            name='Avg Hit Song'
-        ))
-        radar_fig.update_layout(
-            polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-            showlegend=True,
-            title="🎯 Audio Feature Radar",
-            height=400,
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-        )
-        st.plotly_chart(radar_fig, use_container_width=True)
+        with viz_col1:
+            feat_labels = ["Danceability", "Energy", "Valence", "Acousticness",
+                           "Speechiness", "Instrumentalness", "Liveness"]
+            feat_values = [danceability, energy, valence, acousticness,
+                           speechiness, instrumentalness, liveness]
+            feat_values_closed = feat_values + [feat_values[0]]
+            feat_labels_closed = feat_labels + [feat_labels[0]]
 
-    with viz_col2:
-        # 3D scatter: Energy vs Danceability vs Valence bubble
-        scatter_fig = go.Figure(data=[go.Scatter3d(
-            x=[danceability],
-            y=[energy],
-            z=[valence],
-            mode='markers+text',
-            text=[f"{pred_pct}%"],
-            textposition='top center',
-            marker=dict(
-                size=max(15, pred_pct / 4),
-                color=pred_pct,
-                colorscale=[[0, '#ef4444'], [0.5, '#f59e0b'], [1, '#10b981']],
-                colorbar=dict(title="Score %"),
-                opacity=0.85,
-                line=dict(color='white', width=1)
-            ),
-            hovertemplate=(
-                f"<b>Your Track</b><br>"
-                f"Danceability: {danceability:.2f}<br>"
-                f"Energy: {energy:.2f}<br>"
-                f"Valence: {valence:.2f}<br>"
-                f"Stream Score: {pred_pct}%<extra></extra>"
+            radar_fig = go.Figure()
+            radar_fig.add_trace(go.Scatterpolar(
+                r=[0.65, 0.7, 0.6, 0.3, 0.08, 0.1, 0.15, 0.65],
+                theta=feat_labels_closed,
+                fill='toself',
+                fillcolor='rgba(16, 185, 129, 0.08)',
+                line=dict(color='rgba(16, 185, 129, 0.5)', width=1.5, dash='dot'),
+                name='🎯 Avg Hit Song'
+            ))
+            radar_fig.add_trace(go.Scatterpolar(
+                r=feat_values_closed,
+                theta=feat_labels_closed,
+                fill='toself',
+                fillcolor='rgba(102, 126, 234, 0.25)',
+                line=dict(color='#a78bfa', width=2.5),
+                name='🎵 Your Track',
+                marker=dict(size=6, color='#c4b5fd')
+            ))
+            radar_fig.update_layout(
+                polar=dict(
+                    bgcolor='rgba(255,255,255,0.03)',
+                    radialaxis=dict(
+                        visible=True, range=[0, 1],
+                        tickfont=dict(color='rgba(255,255,255,0.4)', size=9),
+                        gridcolor='rgba(255,255,255,0.1)',
+                        linecolor='rgba(255,255,255,0.1)',
+                    ),
+                    angularaxis=dict(
+                        tickfont=dict(color='rgba(255,255,255,0.8)', size=11),
+                        gridcolor='rgba(255,255,255,0.08)',
+                        linecolor='rgba(255,255,255,0.1)',
+                    )
+                ),
+                showlegend=True,
+                legend=dict(font=dict(color='white', size=11), bgcolor='rgba(0,0,0,0)'),
+                title=dict(text="🎯 Audio Feature Radar", font=dict(color='white', size=14)),
+                height=420,
+                paper_bgcolor='rgba(15,12,41,0.9)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(t=50, b=20, l=20, r=20),
             )
-        )])
-        scatter_fig.update_layout(
-            title="🌐 3D Feature Space",
-            scene=dict(
-                xaxis_title="Danceability",
-                yaxis_title="Energy",
-                zaxis_title="Valence",
-                xaxis=dict(range=[0, 1]),
-                yaxis=dict(range=[0, 1]),
-                zaxis=dict(range=[0, 1]),
-                bgcolor='rgba(240,242,255,0.5)',
-            ),
-            height=400,
-            paper_bgcolor='rgba(0,0,0,0)',
-        )
-        st.plotly_chart(scatter_fig, use_container_width=True)
+            st.plotly_chart(radar_fig, use_container_width=True)
 
-    # 3D Bar: NLP scores + prediction
-    bar_labels = ["Stream Score", "Hook Score", "Lexical Diversity", "Semantic Coherence"]
-    bar_values = [
-        pred_pct / 100,
-        nlp["hook_repetition"],
-        nlp["lexical_diversity"],
-        nlp["semantic_coherence"]
-    ]
-    bar_colors = ['#667eea', '#f59e0b', '#10b981', '#8b5cf6']
+        with viz_col2:
+            scatter_fig = go.Figure(data=[go.Scatter3d(
+                x=[danceability],
+                y=[energy],
+                z=[valence],
+                mode='markers+text',
+                text=[f"  {pred_pct}% ▲"],
+                textfont=dict(color='white', size=13),
+                textposition='top center',
+                marker=dict(
+                    size=max(18, pred_pct / 3.5),
+                    color=pred_pct,
+                    colorscale=[[0,'#ef4444'],[0.4,'#f59e0b'],[0.7,'#10b981'],[1,'#06b6d4']],
+                    colorbar=dict(
+                        title=dict(text="Score %", font=dict(color='white')),
+                        tickfont=dict(color='white'),
+                        bgcolor='rgba(0,0,0,0)',
+                        outlinecolor='rgba(255,255,255,0.2)',
+                    ),
+                    opacity=0.9,
+                    line=dict(color='rgba(255,255,255,0.4)', width=2)
+                ),
+                hovertemplate=(
+                    f"<b>🎵 Your Track</b><br>"
+                    f"Danceability: <b>{danceability:.2f}</b><br>"
+                    f"Energy: <b>{energy:.2f}</b><br>"
+                    f"Valence: <b>{valence:.2f}</b><br>"
+                    f"Stream Score: <b>{pred_pct}%</b><extra></extra>"
+                )
+            )])
+            scatter_fig.update_layout(
+                title=dict(text="🌐 3D Feature Space", font=dict(color='white', size=14)),
+                scene=dict(
+                    xaxis=dict(title="Danceability", range=[0,1],
+                               backgroundcolor='rgba(255,255,255,0.02)',
+                               gridcolor='rgba(255,255,255,0.08)',
+                               showbackground=True,
+                               tickfont=dict(color='rgba(255,255,255,0.6)')),
+                    yaxis=dict(title="Energy", range=[0,1],
+                               backgroundcolor='rgba(255,255,255,0.02)',
+                               gridcolor='rgba(255,255,255,0.08)',
+                               showbackground=True,
+                               tickfont=dict(color='rgba(255,255,255,0.6)')),
+                    zaxis=dict(title="Valence", range=[0,1],
+                               backgroundcolor='rgba(255,255,255,0.02)',
+                               gridcolor='rgba(255,255,255,0.08)',
+                               showbackground=True,
+                               tickfont=dict(color='rgba(255,255,255,0.6)')),
+                    bgcolor='rgba(15,12,41,0.95)',
+                ),
+                height=420,
+                paper_bgcolor='rgba(15,12,41,0.9)',
+                margin=dict(t=50, b=10, l=10, r=10),
+            )
+            st.plotly_chart(scatter_fig, use_container_width=True)
 
-    bar3d_fig = go.Figure(data=[
-        go.Bar(
+        # Score dashboard bar chart
+        bar_labels  = ["Stream Score", "Hook Score", "Lexical Diversity", "Semantic Coherence"]
+        bar_values  = [pred_pct/100, nlp["hook_repetition"], nlp["lexical_diversity"], nlp["semantic_coherence"]]
+        bar_colors  = ['rgba(102,126,234,0.85)', 'rgba(245,158,11,0.85)',
+                       'rgba(16,185,129,0.85)', 'rgba(139,92,246,0.85)']
+        bar_borders = ['#818cf8', '#fbbf24', '#34d399', '#a78bfa']
+
+        bar_fig = go.Figure(data=[go.Bar(
             x=bar_labels,
             y=bar_values,
             marker=dict(
                 color=bar_colors,
-                line=dict(color='white', width=1.5)
+                line=dict(color=bar_borders, width=2),
+                pattern=dict(shape=""),
             ),
-            text=[f"{v:.0%}" for v in bar_values],
+            text=[f"<b>{v:.0%}</b>" for v in bar_values],
             textposition='outside',
+            textfont=dict(color='white', size=13),
+            width=0.5,
+        )])
+        bar_fig.update_layout(
+            title=dict(text="📈 Combined Intelligence Score", font=dict(color='white', size=14)),
+            yaxis=dict(
+                title="Score", range=[0, 1.3], tickformat=".0%",
+                gridcolor='rgba(255,255,255,0.06)',
+                tickfont=dict(color='rgba(255,255,255,0.6)'),
+                zerolinecolor='rgba(255,255,255,0.1)',
+            ),
+            xaxis=dict(tickfont=dict(color='rgba(255,255,255,0.85)', size=12)),
+            height=330,
+            paper_bgcolor='rgba(15,12,41,0.9)',
+            plot_bgcolor='rgba(255,255,255,0.02)',
+            showlegend=False,
+            bargap=0.3,
+            margin=dict(t=50, b=20, l=40, r=20),
         )
-    ])
-    bar3d_fig.update_layout(
-        title="📈 Combined Score Dashboard",
-        yaxis=dict(title="Score", range=[0, 1.2], tickformat=".0%"),
-        xaxis=dict(title=""),
-        height=300,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(248,249,255,0.8)',
-        showlegend=False,
-    )
-    st.plotly_chart(bar3d_fig, use_container_width=True)
+        st.plotly_chart(bar_fig, use_container_width=True)
+
 
 else:
     # Default state
