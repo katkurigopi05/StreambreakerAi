@@ -369,7 +369,7 @@ if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_
 
     # Top metrics
     st.markdown("---")
-    m1, m2, m3, m4 = st.columns(4)
+    m1, m2, m3, m4, m5 = st.columns(5)
 
     with m1:
         pred_pct = prediction["prediction_probability"]
@@ -405,6 +405,17 @@ if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_
         <div class="metric-card">
             <div class="metric-value" style="color: #4f46e5">${budget:,}</div>
             <div class="metric-label">Budget</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with m5:
+        bpm_val = int(tempo)
+        bpm_label = "🟢 Dance" if 100 <= bpm_val <= 140 else "🔵 Fast" if bpm_val > 140 else "🔴 Slow"
+        bpm_color = "#10b981" if 100 <= bpm_val <= 140 else "#06b6d4" if bpm_val > 140 else "#f59e0b"
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value" style="color: {bpm_color}">{bpm_val}</div>
+            <div class="metric-label">BPM · {bpm_label}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -637,6 +648,44 @@ if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_
             margin=dict(t=50, b=20, l=40, r=20),
         )
         st.plotly_chart(bar_fig, use_container_width=True)
+
+        # BPM Gauge
+        bpm_zone_color = "#10b981" if 100 <= tempo <= 140 else "#06b6d4" if tempo > 140 else "#f59e0b"
+        bpm_zone_label = "Dance Tempo" if 100 <= tempo <= 140 else "Fast / Hype" if tempo > 140 else "Slow / Ballad"
+        gauge_fig = go.Figure(go.Indicator(
+            mode="gauge+number+delta",
+            value=tempo,
+            delta={"reference": 120, "suffix": " BPM", "font": {"color": "white"}},
+            number={"suffix": " BPM", "font": {"color": "white", "size": 32}},
+            title={"text": f"🥁 Tempo — {bpm_zone_label}", "font": {"color": "white", "size": 14}},
+            gauge={
+                "axis": {
+                    "range": [60, 220],
+                    "tickcolor": "rgba(255,255,255,0.5)",
+                    "tickfont": {"color": "rgba(255,255,255,0.6)"},
+                },
+                "bar": {"color": bpm_zone_color, "thickness": 0.25},
+                "bgcolor": "rgba(255,255,255,0.04)",
+                "borderwidth": 0,
+                "steps": [
+                    {"range": [60, 100],  "color": "rgba(245,158,11,0.15)"},
+                    {"range": [100, 140], "color": "rgba(16,185,129,0.15)"},
+                    {"range": [140, 220], "color": "rgba(6,182,212,0.15)"},
+                ],
+                "threshold": {
+                    "line": {"color": "white", "width": 2},
+                    "thickness": 0.75,
+                    "value": 120,
+                },
+            },
+        ))
+        gauge_fig.update_layout(
+            height=280,
+            paper_bgcolor="rgba(15,12,41,0.9)",
+            font={"color": "white"},
+            margin=dict(t=60, b=20, l=40, r=40),
+        )
+        st.plotly_chart(gauge_fig, use_container_width=True)
 
 
 else:
