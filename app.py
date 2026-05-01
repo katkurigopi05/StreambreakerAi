@@ -200,6 +200,30 @@ _FEAT_DEFAULTS = {
     "sb_acousticness": 0.15, "sb_speechiness": 0.05, "sb_instrumentalness": 0.0,
     "sb_liveness": 0.12, "sb_loudness": -6.0, "sb_tempo": 125,
     "sb_duration": 210, "sb_key": 5, "sb_mode": 1, "sb_time_sig": 4,
+    "sb_lyrics": """[Verse 1]
+I've been walking through the city lights
+Chasing shadows in the neon nights
+Every corner turns to something new
+But all I see is shades of you
+
+[Chorus]
+Take me higher, take me higher
+Set my heart on fire, fire
+We're burning brighter through the rain
+Take me higher once again
+
+[Verse 2]
+The music plays beneath the stars
+We dance like nothing leaves a scar
+Your laughter echoes through the street
+A melody I can't delete
+
+[Chorus]
+Take me higher, take me higher
+Set my heart on fire, fire
+We're burning brighter through the rain
+Take me higher once again""",
+    "sb_last_audio": "",  # tracks last processed filename
 }
 # Seed session state on first load only
 for k, v in _FEAT_DEFAULTS.items():
@@ -209,37 +233,42 @@ for k, v in _FEAT_DEFAULTS.items():
 audio_metadata = None
 
 if uploaded_audio is not None:
-    try:
-        from model0_audio import extract_features, get_file_metadata
-        with st.sidebar.status("🔄 Analyzing audio with Model 0...", expanded=True) as status:
-            st.write("Extracting audio features via librosa...")
-            feats, err = extract_features(uploaded_audio, filename=uploaded_audio.name)
-            if err:
-                st.sidebar.error(f"Audio analysis failed: {err}")
-            elif feats:
-                # Write directly into session_state → sliders pick up new values
-                st.session_state["sb_danceability"]     = round(float(feats.get("danceability",     0.65)), 2)
-                st.session_state["sb_energy"]           = round(float(feats.get("energy",           0.75)), 2)
-                st.session_state["sb_valence"]          = round(float(feats.get("valence",          0.55)), 2)
-                st.session_state["sb_acousticness"]     = round(float(feats.get("acousticness",     0.15)), 2)
-                st.session_state["sb_speechiness"]      = round(float(feats.get("speechiness",      0.05)), 2)
-                st.session_state["sb_instrumentalness"] = round(float(feats.get("instrumentalness", 0.0)),  2)
-                st.session_state["sb_liveness"]         = round(float(feats.get("liveness",         0.12)), 2)
-                st.session_state["sb_loudness"]         = round(float(feats.get("loudness",         -6.0)), 1)
-                st.session_state["sb_tempo"]            = int(feats.get("tempo", 125))
-                st.session_state["sb_duration"]         = max(60, min(600, int(feats.get("duration_ms", 210000) / 1000)))
-                st.session_state["sb_key"]              = int(feats.get("key",  5))
-                st.session_state["sb_mode"]             = int(feats.get("mode", 1))
-                ts = int(feats.get("time_signature", 4))
-                st.session_state["sb_time_sig"]         = ts if ts in [3, 4, 5] else 4
-                st.sidebar.success(f"✅ Auto-filled from: **{uploaded_audio.name}**")
-                uploaded_audio.seek(0)
-                audio_metadata = get_file_metadata(uploaded_audio, filename=uploaded_audio.name)
-            status.update(label="✅ Audio analyzed!", state="complete")
-    except ImportError:
-        st.sidebar.warning("⚠️ librosa not installed. Using manual sliders.")
-    except Exception as e:
-        st.sidebar.error(f"Error: {e}")
+    # Only re-extract if it's a NEW file
+    if uploaded_audio.name != st.session_state["sb_last_audio"]:
+        try:
+            from model0_audio import extract_features, get_file_metadata
+            with st.sidebar.spinner("🔄 Analyzing audio..."):
+                feats, err = extract_features(uploaded_audio, filename=uploaded_audio.name)
+                if err:
+                    st.sidebar.error(f"Audio analysis failed: {err}")
+                elif feats:
+                    st.session_state["sb_danceability"]     = round(float(feats.get("danceability",     0.65)), 2)
+                    st.session_state["sb_energy"]           = round(float(feats.get("energy",           0.75)), 2)
+                    st.session_state["sb_valence"]          = round(float(feats.get("valence",          0.55)), 2)
+                    st.session_state["sb_acousticness"]     = round(float(feats.get("acousticness",     0.15)), 2)
+                    st.session_state["sb_speechiness"]      = round(float(feats.get("speechiness",      0.05)), 2)
+                    st.session_state["sb_instrumentalness"] = round(float(feats.get("instrumentalness", 0.0)),  2)
+                    st.session_state["sb_liveness"]         = round(float(feats.get("liveness",         0.12)), 2)
+                    st.session_state["sb_loudness"]         = round(float(feats.get("loudness",         -6.0)), 1)
+                    st.session_state["sb_tempo"]            = int(feats.get("tempo", 125))
+                    st.session_state["sb_duration"]         = max(60, min(600, int(feats.get("duration_ms", 210000) / 1000)))
+                    st.session_state["sb_key"]              = int(feats.get("key",  5))
+                    st.session_state["sb_mode"]             = int(feats.get("mode", 1))
+                    ts = int(feats.get("time_signature", 4))
+                    st.session_state["sb_time_sig"]         = ts if ts in [3, 4, 5] else 4
+                    st.session_state["sb_last_audio"]       = uploaded_audio.name
+                    # Try to extract embedded lyrics
+                    uploaded_audio.seek(0)
+                    audio_metadata = get_file_metadata(uploaded_audio, filename=uploaded_audio.name)
+                    if audio_metadata and audio_metadata.get("embedded_lyrics"):
+                        st.session_state["sb_lyrics"] = audio_metadata["embedded_lyrics"]
+                    st.sidebar.success(f"✅ Auto-filled: **{uploaded_audio.name}**")
+        except ImportError:
+            st.sidebar.warning("⚠️ librosa not installed. Using manual sliders.")
+        except Exception as e:
+            st.sidebar.error(f"Error: {e}")
+    else:
+        st.sidebar.caption(f"✅ Loaded: **{uploaded_audio.name}**")
 
 # Audio Features — use key= so session_state drives slider values
 st.sidebar.markdown("### 🎧 Audio Features")
@@ -293,29 +322,7 @@ st.sidebar.markdown("### 📝 Song Lyrics")
 lyrics = st.sidebar.text_area(
     "Paste lyrics (include [Verse], [Chorus] headers for best analysis)",
     height=200,
-    value="""[Verse 1]
-I've been walking through the city lights
-Chasing shadows in the neon nights
-Every corner turns to something new
-But all I see is shades of you
-
-[Chorus]
-Take me higher, take me higher
-Set my heart on fire, fire
-We're burning brighter through the rain
-Take me higher once again
-
-[Verse 2]
-The music plays beneath the stars
-We dance like nothing leaves a scar
-Your laughter echoes through the street
-A melody I can't delete
-
-[Chorus]
-Take me higher, take me higher
-Set my heart on fire, fire
-We're burning brighter through the rain
-Take me higher once again""",
+    key="sb_lyrics",
 )
 
 
