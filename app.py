@@ -195,12 +195,17 @@ uploaded_audio = st.sidebar.file_uploader(
 )
 
 # Default feature values
-defaults = {
-    "danceability": 0.65, "energy": 0.75, "valence": 0.55,
-    "acousticness": 0.15, "speechiness": 0.05, "instrumentalness": 0.0,
-    "liveness": 0.12, "loudness": -6.0, "tempo": 125, "duration_ms": 210000,
-    "key": 5, "mode": 1, "time_signature": 4,
+_FEAT_DEFAULTS = {
+    "sb_danceability": 0.65, "sb_energy": 0.75, "sb_valence": 0.55,
+    "sb_acousticness": 0.15, "sb_speechiness": 0.05, "sb_instrumentalness": 0.0,
+    "sb_liveness": 0.12, "sb_loudness": -6.0, "sb_tempo": 125,
+    "sb_duration": 210, "sb_key": 5, "sb_mode": 1, "sb_time_sig": 4,
 }
+# Seed session state on first load only
+for k, v in _FEAT_DEFAULTS.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
+
 audio_metadata = None
 
 if uploaded_audio is not None:
@@ -212,9 +217,22 @@ if uploaded_audio is not None:
             if err:
                 st.sidebar.error(f"Audio analysis failed: {err}")
             elif feats:
-                defaults.update(feats)
+                # Write directly into session_state → sliders pick up new values
+                st.session_state["sb_danceability"]     = round(float(feats.get("danceability",     0.65)), 2)
+                st.session_state["sb_energy"]           = round(float(feats.get("energy",           0.75)), 2)
+                st.session_state["sb_valence"]          = round(float(feats.get("valence",          0.55)), 2)
+                st.session_state["sb_acousticness"]     = round(float(feats.get("acousticness",     0.15)), 2)
+                st.session_state["sb_speechiness"]      = round(float(feats.get("speechiness",      0.05)), 2)
+                st.session_state["sb_instrumentalness"] = round(float(feats.get("instrumentalness", 0.0)),  2)
+                st.session_state["sb_liveness"]         = round(float(feats.get("liveness",         0.12)), 2)
+                st.session_state["sb_loudness"]         = round(float(feats.get("loudness",         -6.0)), 1)
+                st.session_state["sb_tempo"]            = int(feats.get("tempo", 125))
+                st.session_state["sb_duration"]         = max(60, min(600, int(feats.get("duration_ms", 210000) / 1000)))
+                st.session_state["sb_key"]              = int(feats.get("key",  5))
+                st.session_state["sb_mode"]             = int(feats.get("mode", 1))
+                ts = int(feats.get("time_signature", 4))
+                st.session_state["sb_time_sig"]         = ts if ts in [3, 4, 5] else 4
                 st.sidebar.success(f"✅ Auto-filled from: **{uploaded_audio.name}**")
-                # Get metadata (title, artist, embedded lyrics)
                 uploaded_audio.seek(0)
                 audio_metadata = get_file_metadata(uploaded_audio, filename=uploaded_audio.name)
             status.update(label="✅ Audio analyzed!", state="complete")
@@ -223,32 +241,33 @@ if uploaded_audio is not None:
     except Exception as e:
         st.sidebar.error(f"Error: {e}")
 
-# Audio Features
+# Audio Features — use key= so session_state drives slider values
 st.sidebar.markdown("### 🎧 Audio Features")
 st.sidebar.caption("Auto-filled from upload · or set manually")
 
 col_a, col_b = st.sidebar.columns(2)
 with col_a:
-    danceability = st.slider("Danceability", 0.0, 1.0, float(defaults["danceability"]), 0.05)
-    energy = st.slider("Energy", 0.0, 1.0, float(defaults["energy"]), 0.05)
-    valence = st.slider("Valence", 0.0, 1.0, float(defaults["valence"]), 0.05)
-    acousticness = st.slider("Acousticness", 0.0, 1.0, float(defaults["acousticness"]), 0.05)
+    danceability     = st.slider("Danceability",     0.0,  1.0,  step=0.01, key="sb_danceability")
+    energy           = st.slider("Energy",           0.0,  1.0,  step=0.01, key="sb_energy")
+    valence          = st.slider("Valence",          0.0,  1.0,  step=0.01, key="sb_valence")
+    acousticness     = st.slider("Acousticness",     0.0,  1.0,  step=0.01, key="sb_acousticness")
 
 with col_b:
-    speechiness = st.slider("Speechiness", 0.0, 1.0, float(defaults["speechiness"]), 0.01)
-    instrumentalness = st.slider("Instrumentalness", 0.0, 1.0, float(defaults["instrumentalness"]), 0.01)
-    liveness = st.slider("Liveness", 0.0, 1.0, float(defaults["liveness"]), 0.01)
-    loudness = st.slider("Loudness (dB)", -60.0, 0.0, float(defaults["loudness"]), 0.5)
+    speechiness      = st.slider("Speechiness",      0.0,  1.0,  step=0.01, key="sb_speechiness")
+    instrumentalness = st.slider("Instrumentalness", 0.0,  1.0,  step=0.01, key="sb_instrumentalness")
+    liveness         = st.slider("Liveness",         0.0,  1.0,  step=0.01, key="sb_liveness")
+    loudness         = st.slider("Loudness (dB)",    -60.0, 0.0, step=0.5,  key="sb_loudness")
 
-tempo = st.sidebar.slider("Tempo (BPM)", 60, 220, int(defaults["tempo"]), 5)
-duration_sec = st.sidebar.slider("Duration (sec)", 60, 600, int(defaults["duration_ms"] / 1000), 10)
-key = st.sidebar.selectbox("Key", list(range(12)), index=int(defaults["key"]),
-                            format_func=lambda x: ["C", "C#", "D", "D#", "E", "F",
-                                                     "F#", "G", "G#", "A", "A#", "B"][x])
-mode = st.sidebar.selectbox("Mode", [0, 1], index=int(defaults["mode"]),
-                             format_func=lambda x: "Major" if x == 1 else "Minor")
-time_signature = st.sidebar.selectbox("Time Signature", [3, 4, 5], index=[3,4,5].index(int(defaults["time_signature"])))
-explicit = st.sidebar.checkbox("Explicit Content", value=False)
+tempo          = st.sidebar.slider("Tempo (BPM)",      60,  220, step=1,  key="sb_tempo")
+duration_sec   = st.sidebar.slider("Duration (sec)",   60,  600, step=5,  key="sb_duration")
+key            = st.sidebar.selectbox("Key",  list(range(12)), index=int(st.session_state["sb_key"]),
+                    format_func=lambda x: ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"][x])
+mode           = st.sidebar.selectbox("Mode", [0, 1], index=int(st.session_state["sb_mode"]),
+                    format_func=lambda x: "Major" if x == 1 else "Minor")
+time_signature = st.sidebar.selectbox("Time Signature", [3, 4, 5],
+                    index=[3,4,5].index(int(st.session_state["sb_time_sig"])))
+explicit       = st.sidebar.checkbox("Explicit Content", value=False)
+
 
 genre = st.sidebar.selectbox(
     "Genre",
