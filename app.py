@@ -324,11 +324,6 @@ budget = st.sidebar.number_input("Budget (USD)", 100, 50000, 1500, 100)
 
 # Lyrics
 st.sidebar.markdown("### 📝 Song Lyrics")
-lyrics = st.sidebar.text_area(
-    "Paste lyrics (include [Verse], [Chorus] headers for best analysis)",
-    height=200,
-    key="sb_lyrics",
-)
 
 if uploaded_audio is not None:
     if st.sidebar.button("✨ Extract Lyrics from Audio with Gemini", use_container_width=True):
@@ -340,7 +335,7 @@ if uploaded_audio is not None:
         if not gemini_api_key:
             st.sidebar.error("GEMINI_API_KEY not found in secrets.toml")
         else:
-            with st.sidebar.spinner("Uploading and transcribing with Gemini 1.5 Flash... (takes 10-30s)"):
+            with st.sidebar.spinner("Uploading and transcribing with Gemini... (takes 10-30s)"):
                 try:
                     genai.configure(api_key=gemini_api_key)
                     # Write to temp file
@@ -362,6 +357,13 @@ if uploaded_audio is not None:
                     st.rerun()
                 except Exception as e:
                     st.sidebar.error(f"Gemini API Error: {e}")
+
+lyrics = st.sidebar.text_area(
+    "Paste lyrics (include [Verse], [Chorus] headers for best analysis)",
+    height=200,
+    key="sb_lyrics",
+)
+
 
 
 # ─────────────────────────────────────────────────────────────
