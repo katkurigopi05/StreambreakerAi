@@ -330,6 +330,39 @@ lyrics = st.sidebar.text_area(
     key="sb_lyrics",
 )
 
+if uploaded_audio is not None:
+    if st.sidebar.button("✨ Extract Lyrics from Audio with Gemini", use_container_width=True):
+        import google.generativeai as genai
+        import os
+        import tempfile
+        
+        gemini_api_key = st.secrets.get("GEMINI_API_KEY")
+        if not gemini_api_key:
+            st.sidebar.error("GEMINI_API_KEY not found in secrets.toml")
+        else:
+            with st.sidebar.spinner("Uploading and transcribing with Gemini 1.5 Flash... (takes 10-30s)"):
+                try:
+                    genai.configure(api_key=gemini_api_key)
+                    # Write to temp file
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+                        uploaded_audio.seek(0)
+                        tmp.write(uploaded_audio.read())
+                        tmp_path = tmp.name
+                    
+                    # Upload to Gemini
+                    audio_file = genai.upload_file(path=tmp_path)
+                    
+                    # Generate content
+                    model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+                    prompt = "Listen to this audio track and transcribe the lyrics exactly as they are sung. Include headers like [Verse], [Chorus] where appropriate. If there are no vocals, just say '[Instrumental]'. Do not include any conversational text, only the lyrics."
+                    response = model.generate_content([prompt, audio_file])
+                    
+                    st.session_state["sb_lyrics"] = response.text
+                    os.remove(tmp_path)
+                    st.rerun()
+                except Exception as e:
+                    st.sidebar.error(f"Gemini API Error: {e}")
+
 
 # ─────────────────────────────────────────────────────────────
 # GENERATE BUTTON
