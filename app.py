@@ -262,6 +262,9 @@ if uploaded_audio is not None:
                     audio_metadata = get_file_metadata(uploaded_audio, filename=uploaded_audio.name)
                     if audio_metadata and audio_metadata.get("embedded_lyrics"):
                         st.session_state["sb_lyrics"] = audio_metadata["embedded_lyrics"]
+                    else:
+                        # Clear sample lyrics — prompt user to paste real ones
+                        st.session_state["sb_lyrics"] = ""
                     # Force re-render so sliders pick up new session_state values
                     st.rerun()
         except ImportError as e:
