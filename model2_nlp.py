@@ -75,8 +75,9 @@ class LyricAnalyzer:
         return cleaned
 
     def _tokenize(self, text: str) -> list:
-        """Tokenize text into lowercase words."""
-        return re.findall(r"[a-zA-Z']+", text.lower())
+        """Tokenize text into lowercase words, supporting any language."""
+        # [^\W\d_]+ matches any unicode word character (excluding numbers and underscores)
+        return re.findall(r"[^\W\d_]+", text.lower())
 
     def _analyze_sentiment(self, text: str) -> dict:
         """
