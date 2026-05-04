@@ -353,7 +353,7 @@ if uploaded_audio is not None:
                     audio_file = genai.upload_file(path=tmp_path)
                     
                     # Generate content
-                    model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+                    model = genai.GenerativeModel(model_name="gemini-2.5-flash")
                     prompt = "Listen to this audio track and transcribe the lyrics exactly as they are sung. Include headers like [Verse], [Chorus] where appropriate. If there are no vocals, just say '[Instrumental]'. Do not include any conversational text, only the lyrics."
                     response = model.generate_content([prompt, audio_file])
                     
