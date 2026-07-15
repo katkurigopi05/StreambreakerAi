@@ -3,6 +3,9 @@
 ![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 ![Machine Learning](https://img.shields.io/badge/XGBoost-ready-brightgreen?style=for-the-badge)
+![Profile Views](https://komarev.com/ghpvc/?username=katkurigopi05&label=Profile%20views&color=0e75b6&style=flat)
+
+> Privacy note: This visitor counter is served by a third-party badge provider and only displays an aggregate view count; GitHub does not provide native profile visitor analytics.
 
 **StreamBreaker AI** is a multi-model machine learning pipeline designed to help independent artists predict their streaming success and automatically generate data-driven marketing strategies for their music. 
 
