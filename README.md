@@ -89,3 +89,26 @@ Be sure to check out `CASE_STUDIES.md` and `TEAM_INTEGRATION.md` for our perform
 
 ---
 *Built for the future of independent artist promotion.*
+
+## Running it
+
+The app is Streamlit.
+
+```bash
+pip install streamlit scikit-learn joblib pandas numpy
+streamlit run app.py          # full app
+streamlit run app_demo.py     # lighter demo
+```
+
+`main.py` runs the pipeline headlessly, without the UI.
+
+The individual models are importable on their own — `model0_audio.py`,
+`model1_predictor.py` and the rest — which is the easiest way to inspect one
+stage in isolation. `genre_encoder.joblib` is the fitted label encoder and is
+committed, so prediction works without retraining.
+
+A `.devcontainer` is included if you would rather not manage the environment
+yourself.
+
+`CASE_STUDIES.md`, `TEST_RESULTS.md` and `TEAM_INTEGRATION.md` carry the
+evaluation and integration notes.
