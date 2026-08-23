@@ -112,3 +112,28 @@ yourself.
 
 `CASE_STUDIES.md`, `TEST_RESULTS.md` and `TEAM_INTEGRATION.md` carry the
 evaluation and integration notes.
+
+## Libraries & Methods
+
+Scanned every `.py` file (10 files, 3,122 lines) — five distinct signal
+sources actually feed the final prediction, which is what the "5-model"
+description refers to.
+
+**Audio** — `librosa` for feature extraction, `mutagen` for file metadata
+(`model0_audio.py`).
+
+**NLP / sentiment** — `textblob.TextBlob` for lyric sentiment
+(`model2_nlp.py`).
+
+**Classical ML** — `sklearn` (`train_test_split`, `LabelEncoder`,
+`accuracy_score`, `roc_auc_score`, `classification_report`) and
+`xgboost.XGBClassifier` — gradient boosting is the model that actually makes
+the prediction, not just a baseline.
+
+**App** — `streamlit`, `plotly` for the interactive charts.
+
+**Own modules, wired through an orchestrator** — `model1_predictor
+.StreamBreakerPredictor`, `model2_nlp.LyricAnalyzer`,
+`orchestrator.StreamBreakerPipeline`, `main.MarketingStrategyGenerator`, which
+takes the model outputs and produces a text brief via `prompts
+.create_marketing_prompt`.
