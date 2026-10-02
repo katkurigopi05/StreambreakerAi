@@ -170,17 +170,21 @@ llm_backend = st.sidebar.selectbox(
 backend_map = {"Ollama (Local)": "ollama", "Groq (Fast & Free)": "groq", "OpenAI": "openai"}
 selected_backend = backend_map[llm_backend]
 
+# Each cloud backend has its own key — never send one provider's key to another
+API_KEY_NAMES = {"groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY"}
+
 api_key_input = ""
 if selected_backend != "ollama":
+    api_key_name = API_KEY_NAMES[selected_backend]
     try:
-        api_key_input = st.secrets["OPENAI_API_KEY"]
+        api_key_input = st.secrets[api_key_name]
     except Exception:
-        api_key_input = os.getenv("OPENAI_API_KEY", "")
-    
+        api_key_input = os.getenv(api_key_name, "")
+
     if api_key_input:
         st.sidebar.caption("✅ Processing via Secure Cloud Backend")
     else:
-        st.sidebar.error("⚠️ API Key not configured in backend secrets. App will not function properly.")
+        st.sidebar.error(f"⚠️ {api_key_name} not configured in backend secrets. App will not function properly.")
 else:
     st.sidebar.caption("Using local Ollama — no API key needed")
     st.sidebar.caption("⏱️ First run may take 2-3 min (model loads into memory)")
@@ -369,16 +373,11 @@ lyrics = st.sidebar.text_area(
 # ─────────────────────────────────────────────────────────────
 # GENERATE BUTTON
 # ─────────────────────────────────────────────────────────────
-if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_width=True):
-
-    # Load pipeline with selected backend
-    pipeline = load_pipeline(
-        backend=selected_backend,
-        api_key=api_key_input if api_key_input else None,
-    )
-
-    # Prepare audio features
-    audio_features = {
+# Everything a run depends on — saved with the results so they can be
+# redrawn on later reruns and compared against the sidebar's current values
+current_inputs = {
+    "backend": selected_backend,
+    "audio_features": {
         "danceability": danceability,
         "energy": energy,
         "key": key,
@@ -394,14 +393,28 @@ if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_
         "time_signature": time_signature,
         "explicit": explicit,
         "genre": genre,
-    }
-
-    artist_profile = {
+    },
+    "artist_profile": {
         "instagram_followers": instagram,
         "spotify_listeners": spotify_listeners,
         "youtube_subscribers": youtube_subs,
         "genre": genre.replace("-", " ").title(),
-    }
+    },
+    "lyrics": lyrics,
+    "budget": budget,
+    "career_stage": career_stage,
+}
+
+if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_width=True):
+
+    # Load pipeline with selected backend
+    pipeline = load_pipeline(
+        backend=selected_backend,
+        api_key=api_key_input if api_key_input else None,
+    )
+
+    audio_features = current_inputs["audio_features"]
+    artist_profile = current_inputs["artist_profile"]
 
     # Run pipeline with progress
     progress = st.progress(0, text="Initializing pipeline...")
@@ -428,7 +441,29 @@ if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_
         
     progress.progress(100, text="✅ Pipeline complete!")
 
+    # Keep the run so the results survive reruns triggered by other widgets
+    st.session_state["sb_last_run"] = {"inputs": current_inputs, "result": result}
+
+last_run = st.session_state.get("sb_last_run")
+
+if last_run:
     # ── RESULTS ───────────────────────────────────────────
+    # Draw from the inputs the run actually used, not the sidebar's current values
+    result = last_run["result"]
+    run_inputs = last_run["inputs"]
+    run_backend = run_inputs["backend"]
+    run_features = run_inputs["audio_features"]
+    budget = run_inputs["budget"]
+    genre = run_features["genre"]
+    tempo = run_features["tempo"]
+    danceability, energy, valence = (run_features[k] for k in ("danceability", "energy", "valence"))
+    acousticness, speechiness = run_features["acousticness"], run_features["speechiness"]
+    instrumentalness, liveness = run_features["instrumentalness"], run_features["liveness"]
+
+    if run_inputs != current_inputs:
+        st.info("ℹ️ Sidebar inputs have changed since these results were generated. "
+                "Click **Run StreamBreaker AI** to update them.")
+
     prediction = result["model1_prediction"]
     nlp = result["model2_nlp"]
     strategy = result["model3_strategy"]
@@ -534,14 +569,18 @@ if st.sidebar.button("🚀 Run StreamBreaker AI", type="primary", use_container_
         st.markdown(strategy["strategy"])
 
         st.divider()
+        cost_note = {"ollama": " (local — free!)", "groq": " (free tier)"}.get(run_backend, " (estimated)")
         st.caption(
             f"✅ Generated using {strategy['metadata']['model']} | "
             f"Tokens: {strategy['metadata']['tokens_used']} | "
-            f"Cost: ${strategy['metadata']['cost_estimate']:.4f} (local — free!)"
+            f"Cost: ${strategy['metadata']['cost_estimate']:.4f}{cost_note}"
         )
     elif strategy:
         st.error(f"❌ Strategy generation failed: {strategy.get('error', 'Unknown error')}")
-        st.info("💡 Make sure Ollama is running. Open the Ollama app or run `ollama serve` in terminal.")
+        if run_backend == "ollama":
+            st.info("💡 Make sure Ollama is running. Open the Ollama app or run `ollama serve` in terminal.")
+        else:
+            st.info(f"💡 Check that `{API_KEY_NAMES[run_backend]}` is set in the app's secrets and is still valid.")
     else:
         st.warning("Strategy not generated.")
 

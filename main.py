@@ -38,9 +38,14 @@ class MarketingStrategyGenerator:
 
         # Auto-detect backend from environment
         if api_key is None:
-            api_key = os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY")
-            if api_key and not self.backend:
-                self.backend = "groq" if os.getenv("GROQ_API_KEY") else "openai"
+            if not self.backend:
+                if os.getenv("GROQ_API_KEY"):
+                    self.backend = "groq"
+                elif os.getenv("OPENAI_API_KEY"):
+                    self.backend = "openai"
+            # Only ever the selected backend's own key — never another provider's
+            key_name = {"groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY"}.get(self.backend)
+            api_key = os.getenv(key_name) if key_name else None
 
         self.api_key = api_key
 
