@@ -1,0 +1,84 @@
+{
+  "trained_on": "2026-10-02",
+  "dataset": "Spotify Huge Track Analysis Dataset (Gildas Le Drogoff, CC BY-NC 4.0)",
+  "release_window": [
+    "2025-01-02",
+    "2025-08-14"
+  ],
+  "popularity_threshold": 10,
+  "train_tracks": 1019936,
+  "test_tracks": 301938,
+  "artists_shared_between_train_and_test": 0,
+  "positive_rate": 0.3588,
+  "accuracy": 0.7091,
+  "baseline_accuracy": 0.6412,
+  "roc_auc": 0.7313,
+  "brier": 0.1944,
+  "small_artists": {
+    "max_followers": 1000,
+    "tracks": 173652,
+    "positive_rate": 0.2574,
+    "accuracy": 0.7432,
+    "baseline_accuracy": 0.7426,
+    "roc_auc": 0.6498,
+    "brier": 0.1808
+  },
+  "typical_curve": [
+    {
+      "followers": 0,
+      "rate": 0.2494
+    },
+    {
+      "followers": 1,
+      "rate": 0.2494
+    },
+    {
+      "followers": 3,
+      "rate": 0.2494
+    },
+    {
+      "followers": 10,
+      "rate": 0.2494
+    },
+    {
+      "followers": 30,
+      "rate": 0.2494
+    },
+    {
+      "followers": 100,
+      "rate": 0.2494
+    },
+    {
+      "followers": 300,
+      "rate": 0.2592
+    },
+    {
+      "followers": 1000,
+      "rate": 0.3301
+    },
+    {
+      "followers": 3000,
+      "rate": 0.4211
+    },
+    {
+      "followers": 10000,
+      "rate": 0.509
+    },
+    {
+      "followers": 30000,
+      "rate": 0.5356
+    },
+    {
+      "followers": 100000,
+      "rate": 0.6024
+    },
+    {
+      "followers": 300000,
+      "rate": 0.6214
+    },
+    {
+      "followers": 1000000,
+      "rate": 0.6214
+    }
+  ]
+}

@@ -117,11 +117,19 @@ Consider:
 - Algorithmic trigger thresholds (Day 6 checkpoint, save rates, stream velocity)
 """
 
+# How Model 1's outlook is worded for the LLM
+OUTLOOK_LABELS = {
+    "above_typical": "Above average for an artist with this audience size",
+    "typical": "About average for an artist with this audience size",
+    "below_typical": "Below average for an artist with this audience size",
+}
+
 STRATEGY_PROMPT_TEMPLATE = """
 Generate a detailed marketing strategy for an independent artist with the following profile:
 
 **TRACK PREDICTION:**
-- Probability of reaching 1,000 streams in 90 days: {prediction_probability}%
+- Estimated chance this release gains traction on Spotify (a popularity score of 10 or more): {prediction_probability}%
+- {typical_note}
 - Confidence level: {confidence_level}
 
 **ARTIST PROFILE:**
@@ -308,13 +316,18 @@ def create_marketing_prompt(
     hook_repetition: float = 0.5,
     semantic_coherence: float = 0.5,
     profanity_detected: bool = False,
-    career_stage: str = "emerging"
+    career_stage: str = "emerging",
+    # From Model 1: how the score compares with artists of a similar audience size
+    typical_probability: float = None,
+    outlook: str = None
 ):
     """
     Create a formatted prompt for the LLM
-    
+
     Args:
         prediction_probability: Model 1's prediction (0-100%)
+        typical_probability: Model 1's rate for artists with a similar audience (0-100%), if known
+        outlook: "above_typical", "typical" or "below_typical" from Model 1, if known
         budget: Marketing budget in USD
         sentiment: Lyric sentiment from Model 2 (positive/negative/neutral)
         lexical_diversity: Vocabulary richness (0-1)
@@ -327,15 +340,22 @@ def create_marketing_prompt(
     """
     
     # Determine confidence level
-    if prediction_probability >= 85:
-        confidence_level = "Very High"
-    elif prediction_probability >= 70:
-        confidence_level = "High"
-    elif prediction_probability >= 50:
-        confidence_level = "Moderate"
+    # The score depends heavily on audience size, so when Model 1 says what is
+    # typical for that size, judge the track against that instead of fixed cut-offs
+    if typical_probability is not None and outlook in OUTLOOK_LABELS:
+        confidence_level = OUTLOOK_LABELS[outlook]
+        typical_note = f"Typical for artists with a similar audience size: {typical_probability}%"
     else:
-        confidence_level = "Low"
-    
+        typical_note = "No comparison with similar-sized artists available"
+        if prediction_probability >= 85:
+            confidence_level = "Very High"
+        elif prediction_probability >= 70:
+            confidence_level = "High"
+        elif prediction_probability >= 50:
+            confidence_level = "Moderate"
+        else:
+            confidence_level = "Low"
+
     # Determine budget flexibility
     if budget >= 3000:
         budget_flexibility = "High - can test multiple channels"
@@ -368,6 +388,7 @@ def create_marketing_prompt(
     
     return STRATEGY_PROMPT_TEMPLATE.format(
         prediction_probability=prediction_probability,
+        typical_note=typical_note,
         confidence_level=confidence_level,
         genre=genre,
         instagram_followers=instagram_followers,

@@ -16,6 +16,10 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from orchestrator import StreamBreakerPipeline
+from model1_predictor import load_metrics
+
+# Card colour for how Model 1's score compares with artists of a similar size
+OUTLOOK_COLORS = {"above_typical": "#10b981", "typical": "#f59e0b", "below_typical": "#ef4444"}
 
 # ─────────────────────────────────────────────────────────────
 # PAGE CONFIG
@@ -317,6 +321,10 @@ genre = st.sidebar.selectbox(
 
 # Artist Profile
 st.sidebar.markdown("### 👤 Artist Profile")
+spotify_followers = st.sidebar.number_input(
+    "Spotify Followers", 0, 10000000, 150, 50,
+    help="Used by the prediction model, together with the audio features",
+)
 instagram = st.sidebar.number_input("Instagram Followers", 0, 1000000, 1200, 100)
 spotify_listeners = st.sidebar.number_input("Spotify Monthly Listeners", 0, 500000, 350, 50)
 youtube_subs = st.sidebar.number_input("YouTube Subscribers", 0, 1000000, 800, 100)
@@ -395,6 +403,7 @@ current_inputs = {
         "genre": genre,
     },
     "artist_profile": {
+        "spotify_followers": spotify_followers,
         "instagram_followers": instagram,
         "spotify_listeners": spotify_listeners,
         "youtube_subscribers": youtube_subs,
@@ -453,8 +462,8 @@ if last_run:
     run_inputs = last_run["inputs"]
     run_backend = run_inputs["backend"]
     run_features = run_inputs["audio_features"]
+    run_followers = run_inputs["artist_profile"]["spotify_followers"]
     budget = run_inputs["budget"]
-    genre = run_features["genre"]
     tempo = run_features["tempo"]
     danceability, energy, valence = (run_features[k] for k in ("danceability", "energy", "valence"))
     acousticness, speechiness = run_features["acousticness"], run_features["speechiness"]
@@ -474,11 +483,13 @@ if last_run:
 
     with m1:
         pred_pct = prediction["prediction_probability"]
-        color = "#10b981" if pred_pct >= 70 else "#f59e0b" if pred_pct >= 50 else "#ef4444"
+        # Judged against artists of a similar size — a raw cut-off would mostly measure audience size
+        outlook = prediction.get("outlook")
+        color = OUTLOOK_COLORS.get(outlook, "#6b7280")
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-value" style="color: {color}">{pred_pct}%</div>
-            <div class="metric-label">Stream Prediction</div>
+            <div class="metric-label">Traction Chance</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -529,23 +540,51 @@ if last_run:
         st.markdown('<div class="section-header">📊 Model 1: Prediction Details</div>',
                     unsafe_allow_html=True)
 
-        if pred_pct >= 70:
-            st.markdown('<div class="success-banner">✅ HIGH POTENTIAL — Invest in marketing!</div>',
+        if outlook == "above_typical":
+            st.markdown('<div class="success-banner">✅ ABOVE AVERAGE for artists with a similar audience</div>',
                         unsafe_allow_html=True)
-        elif pred_pct >= 50:
-            st.markdown('<div class="warning-banner">⚠️ MODERATE — Proceed with caution</div>',
+        elif outlook == "typical":
+            st.markdown('<div class="warning-banner">➖ ABOUT AVERAGE for artists with a similar audience</div>',
                         unsafe_allow_html=True)
+        elif outlook == "below_typical":
+            st.error("🔻 BELOW AVERAGE for artists with a similar audience")
         else:
-            st.error("🔴 LOW POTENTIAL — Consider improving the track first")
+            st.warning("⚠️ Model 1 could not score this track — showing a neutral placeholder")
 
+        typical_pct = prediction.get("typical_probability")
         st.markdown(f"""
         | Metric | Value |
         |--------|-------|
-        | **Prediction Probability** | {pred_pct}% |
-        | **Will Hit 1K Streams** | {'✅ Yes' if prediction['will_hit_1k_streams'] else '❌ No'} |
+        | **Chance of Gaining Traction** | {pred_pct}% |
+        | **Typical for your audience size** | {f'{typical_pct}%' if typical_pct is not None else 'N/A'} |
+        | **Spotify Followers Used** | {run_followers:,} |
         | **Confidence** | {prediction['confidence']} |
-        | **Genre** | {genre.replace('-', ' ').title()} |
         """)
+
+        model_metrics = load_metrics()
+        if model_metrics:
+            # Report the test result for the group this artist belongs to
+            small = model_metrics["small_artists"]
+            if run_followers < small["max_followers"]:
+                reliability = (
+                    f"For artists under {small['max_followers']:,} followers the model is weak: on "
+                    f"{small['tracks']:,} releases by artists it never saw, it was right {small['accuracy']:.1%} "
+                    f"of the time, against {small['baseline_accuracy']:.1%} for always guessing \"no\". "
+                    f"Treat the score as a rough signal, not a verdict."
+                )
+            else:
+                reliability = (
+                    f"On {model_metrics['test_tracks']:,} releases by artists it never saw, it was right "
+                    f"{model_metrics['accuracy']:.1%} of the time, against "
+                    f"{model_metrics['baseline_accuracy']:.1%} for always guessing \"no\"."
+                )
+            st.caption(
+                f"The chance that a new release reaches a Spotify popularity score of "
+                f"{model_metrics['popularity_threshold']} or more, estimated from the audio features and "
+                f"Spotify followers. Genre is not used, and most of what the model knows comes from audience "
+                f"size. {reliability} Follower counts in the training data were collected after release, and "
+                f"releases that never got any plays are missing from it, so real chances are lower."
+            )
 
     with col_right:
         st.markdown('<div class="section-header">🎤 Model 2: Lyric Analysis</div>',
@@ -687,7 +726,7 @@ if last_run:
                     f"Danceability: <b>{danceability:.2f}</b><br>"
                     f"Energy: <b>{energy:.2f}</b><br>"
                     f"Valence: <b>{valence:.2f}</b><br>"
-                    f"Stream Score: <b>{pred_pct}%</b><extra></extra>"
+                    f"Traction Chance: <b>{pred_pct}%</b><extra></extra>"
                 )
             )])
             scatter_fig.update_layout(
@@ -717,7 +756,7 @@ if last_run:
             st.plotly_chart(scatter_fig, use_container_width=True)
 
         # Score dashboard bar chart
-        bar_labels  = ["Stream Score", "Hook Score", "Lexical Diversity", "Semantic Coherence"]
+        bar_labels  = ["Traction Chance", "Hook Score", "Lexical Diversity", "Semantic Coherence"]
         bar_values  = [pred_pct/100, nlp["hook_repetition"], nlp["lexical_diversity"], nlp["semantic_coherence"]]
         bar_colors  = ['rgba(102,126,234,0.85)', 'rgba(245,158,11,0.85)',
                        'rgba(16,185,129,0.85)', 'rgba(139,92,246,0.85)']
@@ -811,8 +850,8 @@ else:
         st.markdown("""
         #### 📊 Model 1
         **XGBoost Prediction**
-        - Analyzes audio features
-        - Predicts streaming success
+        - Audio features + audience size
+        - Estimates chance of traction
         - Returns probability %
         """)
     with flow_cols[2]:

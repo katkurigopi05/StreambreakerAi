@@ -7,7 +7,7 @@
 
 > Privacy note: this counter is served by a third-party badge service and may log standard request metadata required to provide the image count.
 
-**StreamBreaker AI** is a multi-model machine learning pipeline designed to help independent artists predict their streaming success and automatically generate data-driven marketing strategies for their music. 
+**StreamBreaker AI** is a multi-model machine learning pipeline designed to help independent artists estimate how likely a release is to gain traction and automatically generate data-driven marketing strategies for their music. 
 
 This is our collaborative Capstone Project, utilizing acoustic feature analysis, natural language processing for lyrics, and Large Language Models (LLMs) to create an end-to-end orchestration platform.
 
@@ -18,8 +18,9 @@ This is our collaborative Capstone Project, utilizing acoustic feature analysis,
 The application is structured into four distinct modules orchestrated together:
 
 - **Model 1: Prediction Engine (Harsh)**
-  - Analyzes 14+ Spotify audio features (e.g., danceability, energy, valence).
-  - Uses an **XGBoost Classifier** to predict if a track will hit the 1,000-stream threshold within its first 90 days.
+  - Analyzes 12 Spotify audio features (e.g., danceability, energy, valence) together with the artist's Spotify follower count. Genre is not an input.
+  - Uses an **XGBoost Classifier** to estimate the chance that a new release reaches a Spotify popularity score of 10 or more. Spotify popularity is not a stream count.
+  - Tested on artists the model never saw: 71% accuracy, against 64% for always guessing "no". Details and limits are in [Model 1: data and accuracy](#model-1-data-and-accuracy).
 
 - **Model 2: NLP Lyric Analyzer (Stephanie)**
   - Evaluates raw lyrics targeting emotional impact and catchiness.
@@ -104,8 +105,9 @@ streamlit run app_demo.py     # lighter demo
 
 The individual models are importable on their own — `model0_audio.py`,
 `model1_predictor.py` and the rest — which is the easiest way to inspect one
-stage in isolation. `genre_encoder.joblib` is the fitted label encoder and is
-committed, so prediction works without retraining.
+stage in isolation. `streambreaker_model.joblib` is the trained Model 1 and
+`streambreaker_metrics.json` holds its test results; both are committed, so
+prediction works without retraining.
 
 A `.devcontainer` is included if you would rather not manage the environment
 yourself.
@@ -125,10 +127,9 @@ description refers to.
 **NLP / sentiment** — `textblob.TextBlob` for lyric sentiment
 (`model2_nlp.py`).
 
-**Classical ML** — `sklearn` (`train_test_split`, `LabelEncoder`,
-`accuracy_score`, `roc_auc_score`, `classification_report`) and
-`xgboost.XGBClassifier` — gradient boosting is the model that actually makes
-the prediction, not just a baseline.
+**Classical ML** — `sklearn` (`GroupShuffleSplit`, `accuracy_score`,
+`roc_auc_score`, `brier_score_loss`) and `xgboost.XGBClassifier` — gradient
+boosting is the model that actually makes the prediction, not just a baseline.
 
 **App** — `streamlit`, `plotly` for the interactive charts.
 
@@ -137,3 +138,61 @@ the prediction, not just a baseline.
 `orchestrator.StreamBreakerPipeline`, `main.MarketingStrategyGenerator`, which
 takes the model outputs and produces a text brief via `prompts
 .create_marketing_prompt`.
+
+## Model 1: data and accuracy
+
+Model 1 is trained on the
+[Spotify Huge Track Analysis Dataset](https://huggingface.co/datasets/GildasLeDrogoff/spotify-huge-track-analysis-dataset)
+by Gildas Le Drogoff (CC BY-NC 4.0, non-commercial use). The dataset is not in
+this repository.
+
+- **What it predicts:** the chance that a new release reaches a Spotify
+  popularity score of 10 or more. About 36% of the training releases did.
+- **Training data:** 1.5 million tracks released from January to mid-August
+  2025, sampled from 4.6 million, one row per track.
+- **How it is tested:** on about 300,000 tracks by artists that do not appear
+  in the training data at all. A threshold of 20 was also tried and gave a
+  similar picture.
+
+| | Accuracy | Always guessing "no" | ROC-AUC |
+|---|---|---|---|
+| All test tracks | 70.9% | 64.1% | 0.73 |
+| Artists under 1,000 followers | 74.3% | 74.3% | 0.65 |
+
+Known limits:
+
+- Most of what the model knows comes from audience size. For artists under
+  1,000 followers it is no more accurate than always guessing "no", although it
+  still ranks tracks better than chance.
+- The dataset leaves out tracks with zero popularity, so real-world chances are
+  lower than the model's numbers.
+- Follower counts were collected after release, so they partly reflect a
+  track's own success.
+- The score is built so that it never falls as followers rise. In the raw data
+  it does fall at the very bottom, because accounts with 0-4 followers are
+  often playlist-fed background-music catalogues.
+- The app's audio upload estimates these features with `librosa`, using its own
+  formulas, and they have not been checked against Spotify's values. Loudness
+  in particular is measured differently there (relative to the loudest moment
+  of the file, not Spotify's overall loudness) and is one of the features the
+  model leans on most, so scores from uploaded audio are less reliable than
+  scores from values typed in from Spotify.
+
+To retrain, download `spotify-huge-audio-features.parquet` into
+`../capstone/hf-spotify-huge/`, then:
+
+```bash
+pip install -r requirements-dev.txt
+python prepare_model1_data.py   # one row per track, new releases only
+python model1_predictor.py      # trains, tests, saves the model and metrics
+```
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest test_app.py test_model1_predictor.py test_pipeline.py
+```
+
+These run without an API key, a network connection or the training dataset.
+`test_integration.py` is separate: it calls a live LLM.

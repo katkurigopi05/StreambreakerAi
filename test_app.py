@@ -132,6 +132,79 @@ def test_openai_run_is_not_labelled_local_and_free(llm_calls):
     assert "local" not in cost_line.lower()
 
 
+def followers_input(at: AppTest):
+    return next(n for n in at.sidebar.number_input if n.label == "Spotify Followers")
+
+
+def shown_chance(at: AppTest) -> float:
+    card = next(m.value for m in at.markdown if "Traction Chance" in m.value)
+    return float(card.split('">')[2].split("%")[0])
+
+
+def test_prediction_is_described_as_popularity_not_stream_counts(llm_calls):
+    at = click_run(launch_app({"OPENAI_API_KEY": "openai-key"}))
+
+    text = page_text(at)
+    assert "1K Streams" not in text
+    assert "popularity score of 10 or more" in text
+    assert "genre is not used" in text.lower()
+
+
+def reliability_caption(at: AppTest) -> str:
+    return next(c.value for c in at.caption if "popularity score" in c.value)
+
+
+def test_small_artists_are_told_how_weak_the_model_is_for_them(llm_calls):
+    from model1_predictor import load_metrics
+    small = load_metrics()["small_artists"]
+
+    at = click_run(launch_app({"OPENAI_API_KEY": "openai-key"}))  # default: 150 followers
+
+    caption = reliability_caption(at)
+    assert f"{small['accuracy']:.1%}" in caption
+    assert f"{small['baseline_accuracy']:.1%}" in caption
+    assert "rough signal" in caption
+
+
+def test_larger_artists_see_the_overall_accuracy(llm_calls):
+    from model1_predictor import load_metrics
+    metrics = load_metrics()
+    at = launch_app({"OPENAI_API_KEY": "openai-key"})
+    followers_input(at).set_value(50_000).run()
+
+    caption = reliability_caption(click_run(at))
+
+    assert f"{metrics['accuracy']:.1%}" in caption
+    assert f"{metrics['baseline_accuracy']:.1%}" in caption
+    assert "rough signal" not in caption
+
+
+def test_caption_states_the_limits_of_the_training_data(llm_calls):
+    caption = reliability_caption(click_run(launch_app({"OPENAI_API_KEY": "openai-key"})))
+
+    assert "after release" in caption
+    assert "never got any plays" in caption
+
+
+def test_spotify_followers_change_the_estimate(llm_calls):
+    at = launch_app({"OPENAI_API_KEY": "openai-key"})
+    followers_input(at).set_value(100).run()
+    small = shown_chance(click_run(at))
+
+    followers_input(at).set_value(100_000).run()
+    large = shown_chance(click_run(at))
+
+    assert large > small
+
+
+def test_estimate_is_compared_with_artists_of_a_similar_size(llm_calls):
+    at = click_run(launch_app({"OPENAI_API_KEY": "openai-key"}))
+
+    text = page_text(at)
+    assert "for artists with a similar audience" in text
+    assert "Typical for your audience size" in text
+
+
 def test_cloud_failure_does_not_tell_the_user_to_start_ollama():
     failure = {"success": False, "error": "API error: invalid key", "strategy": None}
     with patch.object(MarketingStrategyGenerator, "_call_openai_compatible",

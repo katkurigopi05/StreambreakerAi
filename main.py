@@ -84,13 +84,17 @@ class MarketingStrategyGenerator:
         hook_repetition: float = 0.5,
         semantic_coherence: float = 0.5,
         profanity_detected: bool = False,
-        career_stage: str = "emerging"
+        career_stage: str = "emerging",
+        typical_probability: float = None,
+        outlook: str = None,
     ) -> dict:
         """
         Generate a marketing strategy based on track prediction and artist profile.
         """
         user_prompt = create_marketing_prompt(
             prediction_probability=prediction_probability,
+            typical_probability=typical_probability,
+            outlook=outlook,
             budget=budget,
             genre=genre,
             instagram_followers=instagram_followers,

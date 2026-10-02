@@ -81,8 +81,8 @@ class StreamBreakerPipeline:
             budget: Marketing budget in USD
 
             artist_profile: Dict with artist info (optional)
-                Keys: instagram_followers, spotify_listeners,
-                      youtube_subscribers, genre
+                Keys: spotify_followers (used by Model 1), instagram_followers,
+                      spotify_listeners, youtube_subscribers, genre
 
             career_stage: "emerging", "growing", or "established"
 
@@ -104,16 +104,21 @@ class StreamBreakerPipeline:
         print("━" * 60)
         print("📊 Step 1: Running Model 1 (XGBoost Prediction)...")
         try:
-            prediction = self.predictor.predict(audio_features)
+            prediction = self.predictor.predict(
+                audio_features,
+                artist_followers=artist_profile.get("spotify_followers", 0),
+            )
             result["model1_prediction"] = prediction
             print(f"   ✅ Prediction: {prediction['prediction_probability']}%")
-            print(f"      Will hit 1K: {prediction['will_hit_1k_streams']}")
+            print(f"      Typical for this audience size: {prediction['typical_probability']}% ({prediction['outlook']})")
             print(f"      Confidence:  {prediction['confidence']}")
         except Exception as e:
             result["errors"].append(f"Model 1 error: {str(e)}")
             result["model1_prediction"] = {
                 "prediction_probability": 50.0,
-                "will_hit_1k_streams": False,
+                "typical_probability": None,
+                "outlook": None,
+                "reaches_popularity_threshold": False,
                 "confidence": "Low",
             }
             print(f"   ⚠️  Model 1 failed: {e}. Using default 50%.")
@@ -152,6 +157,8 @@ class StreamBreakerPipeline:
         try:
             strategy_result = self.marketing_gen.generate_strategy(
                 prediction_probability=pred_prob,
+                typical_probability=result["model1_prediction"]["typical_probability"],
+                outlook=result["model1_prediction"]["outlook"],
                 budget=budget,
                 genre=genre,
                 instagram_followers=artist_profile.get("instagram_followers", 500),
@@ -259,6 +266,7 @@ Take me higher once again
 """
 
     test_profile = {
+        "spotify_followers": 150,
         "instagram_followers": 1200,
         "spotify_listeners": 350,
         "youtube_subscribers": 800,
